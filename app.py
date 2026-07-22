@@ -411,7 +411,7 @@ body, .gradio-container {
 # -----------------------------
 # Gradio Blocks Layout
 # -----------------------------
-with gr.Blocks(css=custom_css, title="AI Movie Recommender") as demo:
+with gr.Blocks(title="AI Movie Recommender") as demo:
     gr.HTML("""
     <div class="header-container">
         <h1>🎬 AI Movie Recommendation System</h1>
@@ -458,5 +458,4 @@ with gr.Blocks(css=custom_css, title="AI Movie Recommender") as demo:
 # -----------------------------
 # Launch
 # -----------------------------
-if __name__ == "__main__":
-    demo.launch()
+demo.launch(css=custom_css, ssr_mode=False)

@@ -84,3 +84,8 @@ If you modify these configurations, you might run into three common errors. Here
 ### 3. The Browser Freeze / "Hanging" Bug
 * **What went wrong**: Originally, the app loaded **62,423 movie titles** into a browser dropdown menu (`gr.Dropdown`). Transferring and rendering this massive dataset inside the client's browser causes the webpage to freeze or hang.
 * **How we solved it**: We replaced the dropdown with a fast text search field (`gr.Textbox` + Search Button). When a user types a movie (e.g. `toy story`), the Python backend matches it instantly using fuzzy string matching (`difflib.get_close_matches`), keeping the webpage extremely fast and lightweight.
+
+### 4. The Gradio 6 SSR (Server-Side Rendering) Node.js Crash
+* **What went wrong**: In Gradio 6.0+, Server-Side Rendering (SSR) is enabled by default. This spawns a Node.js proxy server alongside Python. In containerized hosting environments (like Hugging Face Spaces), this secondary server can be blocked or run out of permissions, causing the app container to shut down.
+* **How we solved it**: We modified the launcher at the bottom of [app.py](app.py) to use `demo.launch(css=custom_css, ssr_mode=False)`. Disabling `ssr_mode` forces Gradio to run in standard client-side rendering mode, which bypasses the Node.js helper and runs purely on Python—making it extremely stable.
+
