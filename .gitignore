@@ -1,0 +1,2 @@
+# Ignore binary pickle artifacts created at runtime
+artifacts/*.pkl
