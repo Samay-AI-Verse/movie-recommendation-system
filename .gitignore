@@ -1,2 +1,4 @@
-# Ignore binary pickle artifacts created at runtime
-artifacts/*.pkl
+# Ignore temporary python files
+__pycache__/
+*.py[cod]
+*$py.class
