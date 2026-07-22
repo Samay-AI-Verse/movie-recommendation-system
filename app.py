@@ -59,6 +59,7 @@ def recommend_html(movie_name, num_recommendations):
     if not exact_matches.empty:
         idx = exact_matches.index[0]
         matched_title = movies.iloc[idx]["title"]
+        matched_genres = movies.iloc[idx]["genres"]
     else:
         closest = difflib.get_close_matches(
             query,
@@ -69,6 +70,7 @@ def recommend_html(movie_name, num_recommendations):
         if closest:
             idx = movies[movies["title_lower"] == closest[0]].index[0]
             matched_title = movies.iloc[idx]["title"]
+            matched_genres = movies.iloc[idx]["genres"]
         else:
             return f"<div class='error-message'>❌ Movie <strong>'{movie_name}'</strong> not found. Try another movie (e.g., 'Toy Story', 'Inception', 'Jumanji').</div>"
             
@@ -85,12 +87,35 @@ def recommend_html(movie_name, num_recommendations):
     result = movies.iloc[indices].copy()
     result["Similarity (%)"] = (similarity[indices] * 100).round(1)
     
-    # Generate HTML grid
+    # Generate matched movie HTML
+    matched_genres_list = matched_genres.split("|")
+    matched_genres_html = "".join([f"<span class='genre-pill'>{g}</span>" for g in matched_genres_list])
+    matched_gradient = get_gradient_for_genres(matched_genres)
+    matched_emoji = get_emoji_for_genres(matched_genres)
+    
     html = f"""
-    <div class='results-header'>
-        <h3>Recommended for: <span class='highlight'>{matched_title}</span></h3>
-    </div>
-    <div class='movie-grid'>
+    <div class="search-results-wrapper">
+        <div class="selected-movie-section">
+            <h3 class="section-title">🔍 Matched Movie</h3>
+            <div class="selected-movie-card-wrapper">
+                <div class="movie-card main-card">
+                    <div class="movie-card-header" style="background: {matched_gradient};">
+                        <span class="movie-icon">{matched_emoji}</span>
+                        <div class="similarity-badge main-badge">Your Search</div>
+                    </div>
+                    <div class="movie-card-body">
+                        <h4 class="movie-title">{matched_title}</h4>
+                        <div class="movie-genres">
+                            {matched_genres_html}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="recommendations-section">
+            <h3 class="section-title">🍿 People Also Liked (Similar Movies)</h3>
+            <div class="movie-grid">
     """
     
     for idx, row in result.iterrows():
@@ -115,7 +140,11 @@ def recommend_html(movie_name, num_recommendations):
         </div>
         """
         
-    html += "</div>"
+    html += """
+            </div>
+        </div>
+    </div>
+    """
     return html
 
 # -----------------------------
@@ -138,7 +167,7 @@ body, .gradio-container {
 
 .header-container {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 45px;
     padding: 30px;
     background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 60%);
     border-radius: 24px;
@@ -160,28 +189,48 @@ body, .gradio-container {
     margin: 0 !important;
 }
 
-.control-row {
-    background: rgba(255, 255, 255, 0.02) !important;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    border-radius: 20px !important;
-    padding: 20px !important;
-    margin-bottom: 30px !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+/* Google-Style Search Container */
+.search-box-container {
+    max-width: 680px !important;
+    margin: 0 auto 40px auto !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
 }
 
-.control-row input {
-    background-color: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 12px !important;
+.search-input-field {
+    width: 100% !important;
+}
+
+.search-input-field input {
+    border-radius: 30px !important;
+    padding: 14px 24px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+    font-size: 1.15rem !important;
     color: white !important;
-    font-size: 1.05rem !important;
-    padding: 12px 16px !important;
+    transition: all 0.3s ease;
 }
 
-.control-row input:focus {
+.search-input-field input:focus {
     border-color: #818CF8 !important;
-    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2) !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    box-shadow: 0 4px 25px rgba(129, 140, 248, 0.25) !important;
+}
+
+.search-settings-row {
+    width: 100% !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 5px;
+}
+
+.settings-slider {
+    flex-grow: 1;
 }
 
 .search-btn {
@@ -190,11 +239,13 @@ body, .gradio-container {
     border: none !important;
     font-weight: 700 !important;
     font-size: 1.05rem !important;
-    padding: 12px 24px !important;
-    border-radius: 12px !important;
+    padding: 10px 24px !important;
+    border-radius: 25px !important;
     cursor: pointer !important;
     box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
     transition: all 0.25s ease !important;
+    height: 46px !important;
+    min-width: 170px;
 }
 
 .search-btn:hover {
@@ -223,20 +274,47 @@ body, .gradio-container {
     margin-top: 20px;
 }
 
-.results-header {
-    margin-top: 10px;
-    margin-bottom: 25px;
+/* Results Layout */
+.selected-movie-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 35px;
+    padding-bottom: 35px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.results-header h3 {
+.selected-movie-card-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.section-title {
     font-size: 1.4rem;
-    font-weight: 600;
+    font-weight: 700;
+    margin-bottom: 20px;
     color: #E5E7EB;
+    text-align: center;
 }
 
-.results-header .highlight {
-    color: #C084FC;
-    font-weight: 700;
+.main-card {
+    width: 260px;
+    height: 250px;
+    border: 2px solid #818CF8 !important;
+    box-shadow: 0 0 25px rgba(129, 140, 248, 0.25) !important;
+    transform: scale(1.02);
+}
+
+.main-card:hover {
+    transform: translateY(-6px) scale(1.04) !important;
+    box-shadow: 0 12px 30px rgba(129, 140, 248, 0.45) !important;
+}
+
+.main-badge {
+    background: rgba(129, 140, 248, 0.2) !important;
+    color: #A78BFA !important;
+    border: 1px solid rgba(129, 140, 248, 0.4) !important;
 }
 
 .movie-grid {
@@ -341,23 +419,24 @@ with gr.Blocks(css=custom_css, title="AI Movie Recommender") as demo:
     </div>
     """)
     
-    with gr.Row(elem_classes=["control-row"]):
-        with gr.Column(scale=4):
-            search_input = gr.Textbox(
-                placeholder="Enter a movie title (e.g. Toy Story, Inception, Jumanji)...",
-                label="Search Movie",
-                show_label=False
-            )
-        with gr.Column(scale=2):
+    with gr.Column(elem_classes=["search-box-container"]):
+        search_input = gr.Textbox(
+            placeholder="Type a movie title (e.g. Toy Story, Inception, Jumanji)...",
+            label="Search Movie",
+            show_label=False,
+            elem_classes=["search-input-field"]
+        )
+        
+        with gr.Row(elem_classes=["search-settings-row"]):
             slider_input = gr.Slider(
                 minimum=4,
                 maximum=24,
                 value=8,
                 step=4,
-                label="Recommendations to show"
+                label="Recommendations to show",
+                elem_classes=["settings-slider"]
             )
-        with gr.Column(scale=1):
-            search_btn = gr.Button("Search", elem_classes=["search-btn"])
+            search_btn = gr.Button("🔍 Search Movies", elem_classes=["search-btn"])
             
     output_html = gr.HTML(
         value="<div class='info-message'>Type a movie title above and press Search to see recommendations!</div>"
