@@ -75,12 +75,11 @@ If you modify these configurations, you might run into three common errors. Here
 
 ### 1. The Hugging Face `ImportError: cannot import name 'HfFolder'` Crash
 * **What went wrong**: Hugging Face pre-installs a newer version of the `huggingface_hub` package which deprecated/removed the `HfFolder` class. However, standard Gradio 4.x packages still try to import this class at startup, causing the app container to crash instantly before loading.
-* **How we solved it**: In [requirements.txt](requirements.txt), we pinned the dependencies as:
+* **How we solved it**: We removed `gradio` from [requirements.txt](requirements.txt) to avoid library conflicts with FastAPI/Jinja2 (which Hugging Face pre-installs). Instead, we let Hugging Face use its default Gradio setup and added only:
   ```txt
-  gradio>=4.44.0
   huggingface_hub==0.23.5
   ```
-  Pinning `huggingface_hub==0.23.5` ensures that the container installs a version containing `HfFolder`, allowing Gradio to initialize without errors.
+  Pinning `huggingface_hub==0.23.5` provides the missing `HfFolder` class that the default Gradio version is searching for, preventing startup crashes.
 
 ### 2. The `FileNotFoundError` (Missing Pickle Files)
 * **What went wrong**: The `.pkl` files (like `movies.pkl`) are pre-computed data tables and vectors. Originally, `.gitignore` had a rule `artifacts/*.pkl` which meant Git completely ignored them during `git add .`, so they were never pushed to Hugging Face, causing the app to crash with a `FileNotFoundError`.
